@@ -11,20 +11,15 @@ const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
-    console.log("Received event:", JSON.stringify(event));
-
     const parameters = event?.pathParameters;
-    console.log("Path parameters:", JSON.stringify(parameters));
 
     const movieReviewId = parameters?.movieId
       ? parseInt(parameters.movieId)
       : undefined;
-    console.log("Movie ID:", movieReviewId);
 
-    const reviewerName = parameters?.reviewerName
-      ? decodeURIComponent(parameters.reviewerName)
+    const year = parameters?.year
+      ? decodeURIComponent(parameters.year)
       : undefined;
-    console.log("Reviewer Name:", reviewerName);
 
     if (!movieReviewId) {
       return {
@@ -34,13 +29,13 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         },
         body: JSON.stringify({ Message: "Missing movie ID" }),
       };
-    } else if (!reviewerName) {
+    } else if (!year) {
       return {
         statusCode: 404,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ Message: "Missing reviewer name" }),
+        body: JSON.stringify({ Message: "Missing year" }),
       };
     }
 
@@ -48,10 +43,10 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       new QueryCommand({
         TableName: process.env.TABLE_NAME,
         KeyConditionExpression: "id = :movieId",
-        FilterExpression: "reviewer_name = :reviewerName",
+        FilterExpression: "contains(reviewer_date, :year)",
         ExpressionAttributeValues: {
           ":movieId": movieReviewId,
-          ":reviewerName": reviewerName,
+          ":year": year,
         },
       })
     );

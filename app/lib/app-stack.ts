@@ -158,11 +158,40 @@ export class AppStack extends cdk.Stack {
       value: getMovieReviewByNameURL.url,
     });
 
+    // Get the reviews written in a specific year for a specific movie.
+    const getMovieReviewByYearFn = new lambdanode.NodejsFunction(
+      this,
+      "GetMovieReviewByYearFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: `${__dirname}/../lambdas/getMovieReviewByYear.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: movieReviewsTable.tableName,
+          REGION: "eu-west-1",
+        },
+      }
+    );
+
+    const getMovieReviewByYearURL = getMovieReviewByYearFn.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ["*"],
+      },
+    });
+
+    new cdk.CfnOutput(this, "Get Movie Review By Year Function URL", {
+      value: getMovieReviewByYearURL.url,
+    });
+
     // Permissions
     movieReviewsTable.grantReadData(getMovieReviewByIdFn);
     movieReviewsTable.grantReadWriteData(newMovieReviewFn);
     movieReviewsTable.grantReadData(getMovieReviewsWithMinRatingFn);
     movieReviewsTable.grantReadData(getMovieReviewByNameFn);
+    movieReviewsTable.grantReadData(getMovieReviewByYearFn);
 
     // REST Api Gateway
     const api = new apig.RestApi(this, "RestAPI", {
@@ -204,6 +233,13 @@ export class AppStack extends cdk.Stack {
     reviewerNameEndpoint.addMethod(
       "GET",
       new apig.LambdaIntegration(getMovieReviewByNameFn, { proxy: true })
+    );
+
+    const yearsEndpoint = reviewsEndpoint.addResource("year");
+    const yearEndpoint = yearsEndpoint.addResource("{year}");
+    yearEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieReviewByYearFn, { proxy: true })
     );
   }
 }
