@@ -1,0 +1,41 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "MovieReview": {
+            "additionalProperties": false,
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "number"
+                },
+                "rating": {
+                    "enum": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ],
+                    "type": "number"
+                },
+                "reviewer_date": {
+                    "type": "string"
+                },
+                "reviewer_name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "content",
+                "id",
+                "rating",
+                "reviewer_date",
+                "reviewer_name"
+            ],
+            "type": "object"
+        }
+    }
+}
+
