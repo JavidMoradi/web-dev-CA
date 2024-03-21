@@ -1,56 +1,38 @@
-import { Handler } from "aws-lambda";
-
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
-    // const parameters = event?.queryStringParameters;
-    const parameters = event?.pathParameters;
-    const movieReviewId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
+    const body = event.body ? JSON.parse(event.body) : undefined;
 
-    if (!movieReviewId) {
+    if (!body) {
       return {
-        statusCode: 404,
+        statusCode: 500,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ Message: "Missing movie ID" }),
+        body: JSON.stringify({ message: "Missing request body" }),
       };
     }
 
     const commandOutput = await ddbDocClient.send(
-      new GetCommand({
+      new PutCommand({
         TableName: process.env.TABLE_NAME,
-        Key: { id: movieReviewId },
+        Item: body,
       })
     );
-    if (!commandOutput.Item) {
-      return {
-        statusCode: 404,
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ Message: "Invalid movie ID" }),
-      };
-    }
 
-    const body = {
-      data: commandOutput.Item,
-    };
-
-    // Return Response
     return {
-      statusCode: 200,
+      statusCode: 201,
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ message: "Movie Review Added" }),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.log(JSON.stringify(error));
     return {
       statusCode: 500,
