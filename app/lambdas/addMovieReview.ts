@@ -24,17 +24,17 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     }
 
     if (!isValidBodyParams(body)) {
-        return {
-          statusCode: 500,
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            message: `Incorrect type. Must match Movie schema`,
-            schema: schema.definitions["Movie"],
-          }),
-        };
-      }
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          message: `Incorrect type. Must match Movie Review schema`,
+          schema: schema.definitions["MovieReview"],
+        }),
+      };
+    }
 
     const commandOutput = await ddbDocClient.send(
       new PutCommand({

@@ -101,9 +101,68 @@ export class AppStack extends cdk.Stack {
       }
     );
 
+    // Get the reviews for the specified movie with a rating greater than the minRating.
+    const getMovieReviewsWithMinRatingFn = new lambdanode.NodejsFunction(
+      this,
+      "GetMovieReviewsWithMinRatingFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: `${__dirname}/../lambdas/getMovieReviewsWithMinRating.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: movieReviewsTable.tableName,
+          REGION: "eu-west-1",
+        },
+      }
+    );
+
+    const getMovieReviewsWithMinRatingURL =
+      getMovieReviewsWithMinRatingFn.addFunctionUrl({
+        authType: lambda.FunctionUrlAuthType.NONE,
+        cors: {
+          allowedOrigins: ["*"],
+        },
+      });
+
+    new cdk.CfnOutput(this, "Get Movie Review By ID and Rating Function URL", {
+      value: getMovieReviewsWithMinRatingURL.url,
+    });
+
+    // Get the review written by the named reviewer for the specified movie.
+    const getMovieReviewByNameFn = new lambdanode.NodejsFunction(
+      this,
+      "GetMovieReviewByNameFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: `${__dirname}/../lambdas/getMovieReviewByName.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: movieReviewsTable.tableName,
+          REGION: "eu-west-1",
+        },
+      }
+    );
+
+    const getMovieReviewByNameURL = getMovieReviewByNameFn.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ["*"],
+      },
+    });
+
+    new cdk.CfnOutput(this, "Get Movie Review By Reviewer Name Function URL", {
+      value: getMovieReviewByNameURL.url,
+    });
+
     // Permissions
     movieReviewsTable.grantReadData(getMovieReviewByIdFn);
     movieReviewsTable.grantReadWriteData(newMovieReviewFn);
+    movieReviewsTable.grantReadData(getMovieReviewsWithMinRatingFn);
+    movieReviewsTable.grantReadData(getMovieReviewByNameFn);
 
     // REST Api Gateway
     const api = new apig.RestApi(this, "RestAPI", {
@@ -131,6 +190,20 @@ export class AppStack extends cdk.Stack {
     addReviewEndpoint.addMethod(
       "POST",
       new apig.LambdaIntegration(newMovieReviewFn, { proxy: true })
+    );
+
+    const reviewEndpoint = movieIdEndpoint.addResource("review");
+    reviewEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieReviewsWithMinRatingFn, {
+        proxy: true,
+      })
+    );
+
+    const reviewerNameEndpoint = reviewsEndpoint.addResource("{reviewerName}");
+    reviewerNameEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieReviewByNameFn, { proxy: true })
     );
   }
 }
