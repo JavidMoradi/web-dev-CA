@@ -1,66 +1,68 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { MovieReview } from "../shared/types";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
+  DynamoDBClient,
+  PutItemCommand,
   QueryCommand,
-  QueryCommandInput,
-} from "@aws-sdk/lib-dynamodb";
+} from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
 import schema from "../shared/types.schema.json";
 
 const ajv = new Ajv();
-const isValidQueryParams = ajv.compile(schema.definitions["MovieReview"] || {});
+const isValidBodyParams = ajv.compile(schema.definitions["MovieReview"] || {});
 
 const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
-    console.log("event:", event);
-    
     const parameters = event?.pathParameters;
-    console.log("parameters:", parameters);
 
     const movieReviewId = parameters?.movieId
       ? parseInt(parameters.movieId)
       : undefined;
-    console.log("movie id:", movieReviewId);
 
-    const minRate = event?.queryStringParameters?.minRate
-      ? parseInt(event?.queryStringParameters?.minRate)
+    const reviewerName = parameters?.reviewerName
+      ? decodeURIComponent(parameters.reviewerName)
       : undefined;
-    console.log("Min rate:", minRate);
 
-    if (!movieReviewId || !minRate) {
+    const body = event.body ? JSON.parse(event.body) : undefined;
+
+    if (!body) {
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ message: "Missing request body" }),
+      };
+    }
+    if (!movieReviewId || !reviewerName) {
       return {
         statusCode: 404,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ Message: "Missing movie ID or Min Rate" }),
+        body: JSON.stringify({ Message: "Missing movie ID or Reviewer Name" }),
       };
     }
 
     const commandOutput = await ddbDocClient.send(
-      new QueryCommand({
+      new PutItemCommand({
         TableName: process.env.TABLE_NAME,
-        KeyConditionExpression: "id = :movieReviewId",
-        FilterExpression: "rating > :minRate",
-        ExpressionAttributeValues: {
-          ":movieReviewId": movieReviewId,
-          ":minRate": minRate,
+        Item: {
+          content: {
+            S: body.content,
+          },
         },
       })
     );
 
     return {
-      statusCode: 200,
+      statusCode: 201,
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        data: commandOutput.Items,
-      }),
+      body: JSON.stringify({ message: "Movie Review Updated" }),
     };
   } catch (error: any) {
     console.log(JSON.stringify(error));
