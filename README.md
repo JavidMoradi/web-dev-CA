@@ -26,5 +26,5 @@ This repository contains an implementation of a serverless REST API for the AWS 
 ### Independent learning (If relevant).
 
 AWS documentation is used when necessary. Following are two examples of use cases of independent research and learning.
-+ https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html
++ https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html
 + https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/dynamodb/command/PutItemCommand/
