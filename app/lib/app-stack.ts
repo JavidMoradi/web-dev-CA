@@ -304,20 +304,20 @@ export class AppStack extends cdk.Stack {
       },
     };
 
-    // const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
-    //   ...appCommonFnProps,
-    //   entry: "./lambdas/auth/authorizer.ts",
-    // });
+    const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
+      ...appCommonFnProps,
+      entry: "./lambdas/auth/authorizer.ts",
+    });
 
-    // const requestAuthorizer = new apig.RequestAuthorizer(
-    //   this,
-    //   "RequestAuthorizer",
-    //   {
-    //     identitySources: [apig.IdentitySource.header("cookie")],
-    //     handler: authorizerFn,
-    //     resultsCacheTtl: cdk.Duration.minutes(0),
-    //   }
-    // );
+    const requestAuthorizer = new apig.RequestAuthorizer(
+      this,
+      "RequestAuthorizer",
+      {
+        identitySources: [apig.IdentitySource.header("cookie")],
+        handler: authorizerFn,
+        resultsCacheTtl: cdk.Duration.minutes(0),
+      }
+    );
 
     const movieReviewsEndpoint = api.root.addResource("movies");
     const movieIdEndpoint = movieReviewsEndpoint.addResource("{movieId}");
@@ -331,10 +331,10 @@ export class AppStack extends cdk.Stack {
     addReviewEndpoint.addMethod(
       "POST",
       new apig.LambdaIntegration(newMovieReviewFn),
-      // {
-      //   authorizer: requestAuthorizer,
-      //   authorizationType: apig.AuthorizationType.CUSTOM,
-      // }
+      {
+        authorizer: requestAuthorizer,
+        authorizationType: apig.AuthorizationType.CUSTOM,
+      }
     );
 
     const reviewEndpoint = movieIdEndpoint.addResource("review");
